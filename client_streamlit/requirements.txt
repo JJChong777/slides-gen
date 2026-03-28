@@ -1,0 +1,4 @@
+# client_streamlit dependencies
+streamlit
+requests
+pillow

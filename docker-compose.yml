@@ -1,0 +1,37 @@
+services:
+  server_slidedeckai:
+    build:
+      context: .
+      dockerfile: dockerfile.server_slidedeckai
+    container_name: server_slidedeckai
+    image: server_slidedeckai
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./server_slidedeckai:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    # add just in case
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    runtime: nvidia
+  streamlit:
+    build:
+      context: .
+      dockerfile: dockerfile.streamlit
+    container_name: streamlit
+    image: streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - STREAMLIT_SERVER_RUN_ON_SAVE=true
+      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=5
+      - PYTHONUNBUFFERED=1
+      - API_URL=http://fast-api:8000
+    volumes:
+      - ./client_streamlit:/app
+    depends_on:
+      - server_slidedeckai

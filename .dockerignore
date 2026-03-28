@@ -1,0 +1,13 @@
+# ignore all models, models.tar etc. only include models.tar.gz 
+server_api/models
+server_api/models.tar
+models/
+models.tar
+
+# ignore the docker image tar
+gen_design_frontend.tar
+gen_design_backend.tar
+
+*/__pycache__
+*/*.log
+client/node_modules/*

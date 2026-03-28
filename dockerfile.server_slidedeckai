@@ -1,0 +1,39 @@
+FROM nvidia/cuda:12.6.0-runtime-ubuntu22.04
+
+# --- Install system dependencies ---
+RUN apt-get update && apt-get install -y \
+    wget curl bzip2 ca-certificates libglib2.0-0 libxext6 libsm6 libxrender1 git \
+    software-properties-common libssl-dev && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.10 python3.10-venv python3.10-dev && \
+    ln -sf /usr/bin/python3.10 /usr/bin/python && \
+    ln -sf /usr/bin/python3.10 /usr/bin/python3
+
+# --- Install micromamba (fast conda alternative) ---
+ENV MAMBA_ROOT_PREFIX=/opt/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
+
+RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj -C /usr/local/bin/ --strip-components=1 bin/micromamba
+
+# --- Create working directory ---
+WORKDIR /app
+
+# --- Copy environment file and install env ---
+COPY server_slidedeckai/environment_slidedeckai.yml .
+
+RUN micromamba create -y -n slidedeckai_app_env -f environment_slidedeckai.yml && \
+    micromamba clean --all --yes
+
+# --- Activate env and set up path ---
+ENV CONDA_DEFAULT_ENV=slidedeckai_app_env
+ENV PATH=$MAMBA_ROOT_PREFIX/envs/slidedeckai_app_env/bin:$PATH
+ENV PYTHONUNBUFFERED=1
+
+# --- Copy application code ---
+COPY server_slidedeckai/ .
+
+EXPOSE 8002
+
+# --- Run app ---
+CMD ["uvicorn", "main_slidedeckai:app", "--host", "0.0.0.0", "--port", "8002"]
