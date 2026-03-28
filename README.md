@@ -7,7 +7,11 @@ Credit goes to [Slide Deck AI](https://github.com/barun-saha/slide-deck-ai/tree/
 
 Checklist:
 Clean up code and environment.yml
+
 Make sure all the server endpoints work 
+
 Hook up client to server
+
 Try Gemini API Key integration or Vertex AI
+
 Maybe try integration with Nemobot / WebLLM
