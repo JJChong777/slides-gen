@@ -1,5 +1,5 @@
 import streamlit as st
-from modules import API_URL, generate_file_name, PPTX_TEMPLATE_FILES, LLM_MODEL_MAX_INPUT_LENGTH
+from modules import API_URL_SLIDE, generate_file_name, PPTX_TEMPLATE_FILES, LLM_MODEL_MAX_INPUT_LENGTH
 import time
 from io import BytesIO
 import requests

@@ -1,0 +1,22 @@
+{
+  "name": "slidegen-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonrepair": "^3.13.3",
+    "multer": "^2.1.1",
+    "pptxgenjs": "^4.0.1"
+  },
+  "type": "module"
+}

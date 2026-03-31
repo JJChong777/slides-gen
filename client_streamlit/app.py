@@ -1,6 +1,4 @@
 import streamlit as st
-import requests
-from modules import API_URL_EDIT, API_URL_GEN
 
 st.set_page_config(layout="wide")
 

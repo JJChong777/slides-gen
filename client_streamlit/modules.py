@@ -18,8 +18,7 @@ from enum import Enum
 
 # Define desired thumbnail size
 THUMBNAIL_SIZE = (200, 150) # Width, Height
-API_URL_GEN = "http://fastapigen:8000"
-API_URL_EDIT = "http://fastapiedit:8001"
+API_URL_SLIDE = "http://fastapislide:8000"
 
 class RequestType(str, Enum):
     GET = "GET"
@@ -214,11 +213,6 @@ def toggle_debug_mode(debug_on: bool, api_url: str):
             return False, f"Error: {response.status_code}"
     except requests.exceptions.RequestException as e:
         return False, f"Connection error: {str(e)}"
-
-page_to_API_URL = {
-    "Gen": API_URL_GEN,
-    "Edit": API_URL_EDIT
-}
 
 def debug_mode_checkbox(page: str):
     # Ensure session state key exists
