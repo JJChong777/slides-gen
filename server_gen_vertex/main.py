@@ -1,12 +1,69 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { jsonrepair } from "jsonrepair";
+from client import app
+import vertexai
+from vertexai.generative_models import GenerativeModel, GenerationConfig
+from fastapi import FastAPI, Form, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse, JSONResponse
+from contextlib import asynccontextmanager
+from json_repair import repair_json
 
-const client = new Anthropic();
+@asynccontextmanager
+async def slidedeckai_lifespan(app: FastAPI):
+    app.state.max_tokens = 300
+    app.state.last_input = None
+    app.state.messages = None
+    app.state.slides_template = None
+    
+    try:
+        print("Initializing Vertex AI...")
+        # Replace with your actual Google Cloud Project ID
+        vertexai.init(project="YOUR_GOOGLE_CLOUD_PROJECT_ID", location="us-central1")
+        
+        # Initialize Gemini 1.5 Flash (Fast, cheap, and excellent at JSON)
+        app.state.model = GenerativeModel("gemini-1.5-flash-002")
+        
+        print("Vertex AI initialized successfully.")
+    except Exception as e:
+        app.state.model = None
+        print(f"Vertex AI initialization failed: {e}")
 
-// ── System prompt ─────────────────────────────────────────────────────────────
-// This is the "IR" (intermediate representation) schema Claude must follow.
-// It maps 1-to-1 to pptxgenjs capabilities so the builder can execute it directly.
-const SYSTEM_PROMPT = `
+
+# app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=slidedeckai_lifespan)
+
+@app.get("/")
+def root():
+    return {"message": "server_gen_vertex is running"}
+
+@app.get("/slides_json")
+def get_slides_json():
+    if not app.state.last_input:
+        raise HTTPException(status_code=400, detail="No prompt provided yet. Call /input_slides first.")
+    if not app.state.model:
+        raise HTTPException(status_code=500, detail="Vertex AI model not loaded.")
+    
+    # Construct the full prompt
+    full_prompt = f"System Instructions:\n{SYSTEM_PROMPT}\n\nUser Input:\n{app.state.last_input}"
+    
+    try:
+        # Enforce strict JSON output using GenerationConfig
+        response = app.state.model.generate_content(
+            full_prompt,
+            generation_config=GenerationConfig(
+                temperature=0.2,
+                response_mime_type="application/json",
+            )
+        )
+        
+        raw_json_output = response.text
+        json_output = repair_json(raw_json_output)
+        return JSONResponse(content=json_output)
+        
+    except Exception as e:
+        print(f"Generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate slides: {str(e)}")
+
+
+SYSTEM_PROMPT = '''
 You are an expert presentation designer. Given a topic, generate a complete, visually engaging slide deck.
 
 Return ONLY valid JSON — no markdown, no code fences, no explanation. Match this schema exactly.
@@ -62,7 +119,7 @@ SLIDE TYPES — use "type" field to select:
   "right": { "label": "string", "color": "hex", "points": ["string"] }
 }
 
-5. "stats" — Big number callouts (3–4 metrics)
+5. "stats" — Big number callouts (3-4 metrics)
 {
   "type": "stats",
   "heading": "string",
@@ -155,41 +212,8 @@ DESIGN RULES:
 - Use "section_break" slides to divide major sections
 - Pick a cohesive color palette (don't default to blue/white)
 - Include at least one "stats", "chart", or "comparison" slide when relevant
-- Include 8–14 slides total for a full deck
+- Include 8-14 slides total for a full deck
 - NEVER use "#" in hex colors — output them without the # prefix
 - All hex colors must be exactly 6 characters
-`;
+'''
 
-/**
- * Call Claude, get back structured slide JSON.
- * @param {string} prompt - user's topic / instructions
- * @param {string} [themeHint] - optional theme override ("dark", "light", "colorful")
- * @returns {object} parsed slides JSON
- */
-export async function generateSlidesJson(prompt, themeHint) {
-  const userMsg = themeHint
-    ? `${prompt}\n\nTheme preference: ${themeHint}`
-    : prompt;
-
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMsg }],
-  });
-
-  const raw = message.content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-
-  // Strip any accidental markdown fences
-  const stripped = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/, "")
-    .trim();
-
-  // jsonrepair fixes common LLM JSON mistakes (trailing commas, single quotes, etc.)
-  const repaired = jsonrepair(stripped);
-  return JSON.parse(repaired);
-}

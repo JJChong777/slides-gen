@@ -6,7 +6,6 @@ import requests
     
 def main():
     st.title("Create a slide deck with AI")
-    st.info("This version is a deconstructed and simplified version of [Slide Deck AI](https://github.com/barun-saha/slide-deck-ai/tree/main).")
     ### template 
     with st.sidebar:
         # The PPT templates

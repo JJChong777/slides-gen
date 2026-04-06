@@ -1,37 +1,40 @@
 services:
-  server_slidedeckai:
+  server_gen_vertex:
     build:
       context: .
-      dockerfile: dockerfile.server_slidedeckai
-    container_name: server_slidedeckai
-    image: server_slidedeckai
+      dockerfile: dockerfile.server_gen_vertex
+    container_name: server_gen_vertex
+    image: server_gen_vertex
     ports:
       - "8002:8002"
     volumes:
-      - ./server_slidedeckai:/app
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
-    # add just in case
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-    runtime: nvidia
-  streamlit:
+      - ./server_gen_vertex:/app
+  server_build:
     build:
       context: .
-      dockerfile: dockerfile.streamlit
-    container_name: streamlit
-    image: streamlit
+      dockerfile: dockerfile.server_build
+    container_name: server_build
+    image: server_build
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server_build:/app
+    depends_on:
+      - server_gen_vertex
+  client:
+    build:
+      context: .
+      dockerfile: dockerfile.client
+    container_name: client
+    image: client
     ports:
       - "8501:8501"
     environment:
       - STREAMLIT_SERVER_RUN_ON_SAVE=true
       - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=5
       - PYTHONUNBUFFERED=1
-      - API_URL=http://fast-api:8000
     volumes:
-      - ./client_streamlit:/app
+      - ./client:/app
     depends_on:
-      - server_slidedeckai
+      - server_build
+      - server_gen_vertex

@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 from io import BytesIO
-from PIL import Image, ImageOps
 
 from datetime import datetime
 import pytz
@@ -18,7 +17,7 @@ from enum import Enum
 
 # Define desired thumbnail size
 THUMBNAIL_SIZE = (200, 150) # Width, Height
-API_URL_SLIDE = "http://fastapislide:8000"
+API_URL_SLIDE = "http://slidebuild:3000"
 
 class RequestType(str, Enum):
     GET = "GET"
@@ -53,35 +52,6 @@ def make_safe_request(req_type: RequestType, url: str, payload: dict = None) -> 
         return False, f"An unexpected request error occurred: {err}"
     except Exception as e:
         return False, f"An unexpected error occurred: {e}"
-    
-def make_safe_img_get(image_url: str) -> tuple[bool, bytes | str]:
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"}
-    response = None # Initialize to None for error handling
-    fetch_successful = False
-
-    try:
-        response = requests.get(image_url, timeout=10, headers=headers) # Add a timeout to prevent infinite hangs
-
-        if response.status_code == 200:
-            # Check Content-Type header to ensure it's an image
-            content_type = response.headers.get('Content-Type', '').lower()
-            if 'image' in content_type:
-                if response.content: # Check if content is not empty
-                    response = response.content
-                    fetch_successful = True
-                else:
-                    response = "Received empty response content (no image data)."
-            else:
-                response = f"URL did not return image data (Content-Type: {content_type})."
-        else:
-            response = f"Failed to fetch image (HTTP Status: {response.status_code})."
-
-    except requests.exceptions.RequestException as e: # Catch network-related errors (timeout, connection, etc.)
-        response = f"Network or request error: {e}"
-    except Exception as e: # Catch any other unexpected errors during fetch
-        response = f"An unexpected error occurred during fetch: {e}"
-    
-    return fetch_successful, response
 
 
 def generate_file_name():
