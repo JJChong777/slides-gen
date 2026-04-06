@@ -34,6 +34,10 @@ app = FastAPI(lifespan=slidedeckai_lifespan)
 def root():
     return {"message": "server_gen_vertex is running"}
 
+@app.get("/receive_text")
+def receive_text():
+    return {"message": "receive text placeholder"}
+
 @app.get("/slides_json")
 def get_slides_json():
     if not app.state.last_input:
