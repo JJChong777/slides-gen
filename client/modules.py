@@ -17,7 +17,7 @@ from enum import Enum
 
 # Define desired thumbnail size
 THUMBNAIL_SIZE = (200, 150) # Width, Height
-API_URL_SLIDE = "http://slidebuild:3000"
+API_URL_SLIDE = "http://server_build:3000"
 
 class RequestType(str, Enum):
     GET = "GET"

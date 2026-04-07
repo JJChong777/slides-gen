@@ -1,3 +1,4 @@
 # client_streamlit dependencies
 streamlit
 requests
+pytz
