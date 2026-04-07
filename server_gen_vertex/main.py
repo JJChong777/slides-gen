@@ -16,10 +16,10 @@ async def slidedeckai_lifespan(app: FastAPI):
     try:
         print("Initializing Vertex AI...")
         # Replace with your actual Google Cloud Project ID
-        vertexai.init(project="YOUR_GOOGLE_CLOUD_PROJECT_ID", location="us-central1")
+        vertexai.init(project="gen-lang-client-0580452984", location="us-central1")
         
         # Initialize Gemini 1.5 Flash (Fast, cheap, and excellent at JSON)
-        app.state.model = GenerativeModel("gemini-1.5-flash-002")
+        app.state.model = GenerativeModel("gemini-3.1-flash-lite-preview")
         
         print("Vertex AI initialized successfully.")
     except Exception as e:
@@ -34,9 +34,20 @@ app = FastAPI(lifespan=slidedeckai_lifespan)
 def root():
     return {"message": "server_gen_vertex is running"}
 
-@app.get("/receive_text")
-def receive_text():
-    return {"message": "receive text placeholder"}
+@app.get("/receive_user_text")
+def receive_user_text(user_input: str = Form(...)):
+    try:
+        user_message = {
+            "role": "user",
+            ### to add the text from PDF into the content
+            "content": [{"type": "text", "text": user_input}]
+        }
+        app.state.messages.append(user_message)
+        app.state.last_input = user_input
+        print(f"Received slides prompt: {user_input}")
+        return {"message": f"Slide Gen Prompt received: {user_input}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error setting slides generation prompt")
 
 @app.get("/slides_json")
 def get_slides_json():

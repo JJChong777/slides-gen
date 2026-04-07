@@ -1,9 +1,5 @@
-# ignore all the models file
-models--QuantStack--FLUX.1-Kontext-dev-GGUF/
-models--black-forest-labs--FLUX.1-Kontext-dev/
-models--stabilityai--stable-diffusion-3.5-medium/
-gemma-3-12b-it/
-models.tar.gz
+# GCP Credentials
+gcp-credentials.json
 
 # ignore all tar and tar.gz files
 *.tar
