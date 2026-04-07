@@ -1,3 +1,5 @@
+import json
+
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File
@@ -16,7 +18,6 @@ async def server_gen_lifespan(app: FastAPI):
         print("Initializing Vertex AI...")
         vertexai.init(project="slide-gen-492602", location="us-central1")
         
-        # Initialize Gemini 1.5 Flash (Fast, cheap, and excellent at JSON)
         app.state.model = GenerativeModel("gemini-2.5-flash-lite")
         
         print("Vertex AI initialized successfully.")
@@ -71,7 +72,15 @@ def get_slides_json():
         )
         
         raw_json_output = response.text
-        json_output = repair_json(raw_json_output)
+        try:
+            json_output = json.loads(raw_json_output)
+            print("Successfully parsed JSON on first try.")
+            
+        except json.JSONDecodeError as e:
+            # 2. Fallback: If it's invalid (e.g., markdown wrappers), repair it
+            print(f"Standard JSON parsing failed: {e}. Attempting repair...")
+            # Remember to keep return_objects=True to prevent the double-serialization bug!
+            json_output = repair_json(raw_json_output, return_objects=True)
         return JSONResponse(content=json_output)
         
     except Exception as e:

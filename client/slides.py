@@ -6,17 +6,6 @@ import requests
     
 def main():
     st.title("Create a slide deck with AI")
-    ### template 
-    with st.sidebar:
-        # The PPT templates
-        pptx_template = st.sidebar.radio(
-            'Select a presentation template:',
-           list(PPTX_TEMPLATE_FILES.keys()),
-            captions=[PPTX_TEMPLATE_FILES[x]['caption'] for x in PPTX_TEMPLATE_FILES],
-            horizontal=True
-        )
-
-        st.session_state.last_prompt_template_slides = pptx_template
 
     if "messages_slides" not in st.session_state:
         st.session_state.messages_slides = [{"role": "assistant", "content": "Hi, I'm the Slide Deck Chatbot! Type in a prompt to get started", "ok":True, "pptx_name": None}]
@@ -26,10 +15,6 @@ def main():
         st.session_state.chat_disabled_slides = False
     if "last_prompt_text_slides" not in st.session_state:
         st.session_state.last_prompt_text_slides = False
-    if "last_prompt_template_slides" not in st.session_state:
-        st.session_state.last_prompt_template_slides = False
-    if "page_range_slider" not in st.session_state:
-        st.session_state.page_range_slider = False
 
     suggested_questions = [
         "Introduction to Machine Learning",
@@ -92,7 +77,7 @@ def main():
     if st.session_state.last_prompt_text_slides:
         
         with st.chat_message("assistant"):
-            with st.spinner("Sending prompt and pptx template name to server..."):
+            with st.spinner("Sending prompt to server..."):
                 success = True
                 prompt_response = "WIP"
                 
