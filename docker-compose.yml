@@ -23,8 +23,6 @@ services:
       - "3000:3000"
     volumes:
       - ./server_build:/app
-    depends_on:
-      - server_gen_vertex
   client:
     build:
       context: .

@@ -1,5 +1,8 @@
 # GCP Credentials
 gcp-credentials.json
+test.json
+node_modules/
+*.pptx
 
 # ignore all tar and tar.gz files
 *.tar

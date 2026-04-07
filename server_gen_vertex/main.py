@@ -1,4 +1,3 @@
-from client import app
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File
@@ -7,34 +6,36 @@ from contextlib import asynccontextmanager
 from json_repair import repair_json
 
 @asynccontextmanager
-async def slidedeckai_lifespan(app: FastAPI):
+async def server_gen_lifespan(app: FastAPI):
     app.state.max_tokens = 300
     app.state.last_input = None
-    app.state.messages = None
+    app.state.messages = []
     app.state.slides_template = None
     
     try:
         print("Initializing Vertex AI...")
-        # Replace with your actual Google Cloud Project ID
-        vertexai.init(project="gen-lang-client-0580452984", location="us-central1")
+        vertexai.init(project="slide-gen-492602", location="us-central1")
         
         # Initialize Gemini 1.5 Flash (Fast, cheap, and excellent at JSON)
-        app.state.model = GenerativeModel("gemini-3.1-flash-lite-preview")
+        app.state.model = GenerativeModel("gemini-2.5-flash-lite")
         
         print("Vertex AI initialized successfully.")
     except Exception as e:
         app.state.model = None
         print(f"Vertex AI initialization failed: {e}")
+    print("Server Gen Vertex is ready to receive requests.")
+    yield
+    print("Server Gen Vertex shutting down.")
 
 
 # app = FastAPI(lifespan=lifespan)
-app = FastAPI(lifespan=slidedeckai_lifespan)
+app = FastAPI(lifespan=server_gen_lifespan)
 
 @app.get("/")
 def root():
     return {"message": "server_gen_vertex is running"}
 
-@app.get("/receive_user_text")
+@app.post("/receive_user_text")
 def receive_user_text(user_input: str = Form(...)):
     try:
         user_message = {
