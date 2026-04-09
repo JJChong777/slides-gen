@@ -13,10 +13,10 @@ async def server_gen_lifespan(app: FastAPI):
     
     try:
         print("Initializing Vertex AI Client...")
-        app.state.client = genai.Client(http_options=HttpOptions(api_version="v1"))
+        app.state.client = genai.Client(vertexai=True,project="slide-gen-492602", location="us-central1")
         app.state.config = genai.types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
-            max_output_tokens=500,
+            max_output_tokens=4096,
             temperature=0.3,
             response_logprobs=True,
             logprobs=3,
@@ -40,11 +40,11 @@ def root():
 
 @app.post("/receive_user_prompt")
 async def receive_user_text(prompt: str = Form(...), 
-    pdf_file: UploadFile = File(None)):
+    pdf_file: UploadFile | None = None):
     try:
         if pdf_file:
             file_bytes = await pdf_file.read()
-            pdf_part = Part.from_data(data=file_bytes, mime_type="application/pdf")
+            pdf_part = Part.from_bytes(data=file_bytes, mime_type="application/pdf")
             app.state.contents = [pdf_part, prompt]
             print(f"Received slides prompt with PDF: {pdf_file.filename}")
         else:

@@ -3,6 +3,7 @@ gcp-credentials.json
 test.json
 node_modules/
 *.pptx
+*.pdf
 
 # ignore all tar and tar.gz files
 *.tar

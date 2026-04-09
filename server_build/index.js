@@ -1,11 +1,12 @@
 import express from "express";
 import cors from "cors";
-
+import multer from "multer";
 import { buildPptx } from "./builder.js";
 
 const PYTHON_SERVICE_URL = "http://server_gen_vertex:8002";
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
@@ -36,23 +37,25 @@ app.post("/build", async (req, res) => {
   }
 });
 
-app.post("/build-full", async (req, res) => {
+app.post("/build_full", upload.single("pdf_file"), async (req, res) => {
   try {
     const { prompt } = req.body;
+    const pdfFile = req.file;
+// 1. Send prompt and optional PDF to Python server
+    const formData = new FormData();
+    formData.append("prompt", prompt);
 
-    if (!prompt) {
-      return res.status(400).json({ error: "Prompt is required" });
+    if (pdfFile) {
+      // Convert buffer to Blob for fetch API
+      const blob = new Blob([pdfFile.buffer], { type: pdfFile.mimetype });
+      formData.append("pdf_file", blob, pdfFile.originalname);
     }
 
-    // 1. Send prompt to Python server (server_gen_vertex)
-    // We use URLSearchParams because the Python endpoint expects Form(...) data
-    const formData = new URLSearchParams();
-    formData.append("user_input", prompt);
-
-    const receiveResponse = await fetch(`${PYTHON_SERVICE_URL}/receive_user_text`, {
+    const receiveResponse = await fetch(`${PYTHON_SERVICE_URL}/receive_user_prompt`, {
       method: "POST",
       body: formData,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      // IMPORTANT: Do not set Content-Type header manually here.
+      // fetch() will automatically set it to multipart/form-data with the correct boundary.
     });
 
     if (!receiveResponse.ok) {
