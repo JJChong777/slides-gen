@@ -3,5 +3,5 @@ uvicorn
 python-multipart
 pydantic
 json-repair
-google-cloud-aiplatform
+google-genai
 pypdf

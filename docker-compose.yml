@@ -9,9 +9,10 @@ services:
       - "8002:8002"
     volumes:
       - ./server_gen_vertex:/app
-      - ./server_gen_vertex/gcp-credentials.json:/app/gcp-credentials.json:ro
+      - ./server_gen_vertex/.env:/app/.env:ro
+    env_file:
+      - .env
     environment:
-    - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
     - PYTHONUNBUFFERED=1
   server_build:
     build:

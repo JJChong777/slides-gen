@@ -1,25 +1,27 @@
 import json
 
-import vertexai
-from vertexai.generative_models import GenerativeModel, GenerationConfig
+from google import genai
+from google.genai.types import HttpOptions, Part
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from json_repair import repair_json
 
 @asynccontextmanager
 async def server_gen_lifespan(app: FastAPI):
-    app.state.max_tokens = 300
-    app.state.last_input = None
-    app.state.messages = []
-    app.state.slides_template = None
+    app.state.contents = None
     
     try:
-        print("Initializing Vertex AI...")
-        vertexai.init(project="slide-gen-492602", location="us-central1")
-        
-        app.state.model = GenerativeModel("gemini-2.5-flash-lite")
-        
+        print("Initializing Vertex AI Client...")
+        app.state.client = genai.Client(http_options=HttpOptions(api_version="v1"))
+        app.state.config = genai.types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            max_output_tokens=500,
+            temperature=0.3,
+            response_logprobs=True,
+            logprobs=3,
+            response_mime_type="application/json",
+          )
         print("Vertex AI initialized successfully.")
     except Exception as e:
         app.state.model = None
@@ -36,39 +38,38 @@ app = FastAPI(lifespan=server_gen_lifespan)
 def root():
     return {"message": "server_gen_vertex is running"}
 
-@app.post("/receive_user_text")
-def receive_user_text(user_input: str = Form(...)):
+@app.post("/receive_user_prompt")
+async def receive_user_text(prompt: str = Form(...), 
+    pdf_file: UploadFile = File(None)):
     try:
-        user_message = {
-            "role": "user",
-            ### to add the text from PDF into the content
-            "content": [{"type": "text", "text": user_input}]
-        }
-        app.state.messages.append(user_message)
-        app.state.last_input = user_input
-        print(f"Received slides prompt: {user_input}")
-        return {"message": f"Slide Gen Prompt received: {user_input}"}
+        if pdf_file:
+            file_bytes = await pdf_file.read()
+            pdf_part = Part.from_data(data=file_bytes, mime_type="application/pdf")
+            app.state.contents = [pdf_part, prompt]
+            print(f"Received slides prompt with PDF: {pdf_file.filename}")
+        else:
+            app.state.contents = prompt
+            print(f"Received slides prompt (Text Only): {prompt}")
+        return {"message": "Slide Gen Prompt (and optional PDF) received"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error setting slides generation prompt")
 
 @app.get("/slides_json")
 def get_slides_json():
-    if not app.state.last_input:
+    if not app.state.contents:
         raise HTTPException(status_code=400, detail="No prompt provided yet. Call /input_slides first.")
-    if not app.state.model:
-        raise HTTPException(status_code=500, detail="Vertex AI model not loaded.")
+    if not app.state.client or not app.state.config:
+        raise HTTPException(status_code=500, detail="Vertex AI client or config not loaded.")
     
     # Construct the full prompt
-    full_prompt = f"System Instructions:\n{SYSTEM_PROMPT}\n\nUser Input:\n{app.state.last_input}"
+
     
     try:
         # Enforce strict JSON output using GenerationConfig
-        response = app.state.model.generate_content(
-            full_prompt,
-            generation_config=GenerationConfig(
-                temperature=0.2,
-                response_mime_type="application/json",
-            )
+        response = app.state.client.models.generate_content(
+          model=MODEL_ID,
+          contents=app.state.contents,
+          config=app.state.config,
         )
         
         raw_json_output = response.text
@@ -81,17 +82,26 @@ def get_slides_json():
             print(f"Standard JSON parsing failed: {e}. Attempting repair...")
             # Remember to keep return_objects=True to prevent the double-serialization bug!
             json_output = repair_json(raw_json_output, return_objects=True)
+        
+        app.state.contents = None  
         return JSONResponse(content=json_output)
         
     except Exception as e:
         print(f"Generation error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate slides: {str(e)}")
 
+MODEL_ID = "gemini-2.5-flash-lite"
 
 SYSTEM_PROMPT = '''
 You are an expert presentation designer. Given a topic, generate a complete, visually engaging slide deck.
 
 Return ONLY valid JSON — no markdown, no code fences, no explanation. Match this schema exactly.
+
+LENGTH CONSTRAINTS (CRITICAL - DO NOT FAIL):
+- Bullets: MAXIMUM 15 words per bullet.
+- Paragraphs/Descriptions: MAXIMUM 25 words.
+- Agenda/Lists: MAXIMUM 8 items per slide. If there are more, create a second "agenda" slide.
+- Headings: MAXIMUM 8 words.
 
 SCHEMA:
 {
