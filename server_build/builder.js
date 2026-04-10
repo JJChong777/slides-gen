@@ -24,6 +24,10 @@ export async function buildPptx(data) {
   const pres = new PptxGenJS();
   pres.layout = "LAYOUT_16x9";
   pres.title = data.title || "Presentation";
+  pres.defineSlideMaster({
+  title: "MASTER_SLIDE",
+  slideNumber: { x: 9.5, y: 5.3, color: "888888", fontSize: 10 }
+});
 
   const theme = { ...DEFAULT_THEME, ...(data.theme || {}) };
 
@@ -148,7 +152,7 @@ function renderBullets(slide, data, theme) {
   });
 
   const bullets = (data.bullets || []).map((b, i) => ({
-    text: typeof b === "string" ? b : b.text,
+    text: String(typeof b === "object" ? (b.text || "") : b),
     options: {
       bullet: true,
       bold: typeof b === "object" ? b.bold : false,
@@ -200,7 +204,7 @@ function renderTwoColumn(slide, data, theme) {
     });
 
     const items = (col.bullets || []).map((b, j, arr) => ({
-      text: b,
+      text: String(b),
       options: {
         bullet: true, fontSize: 13,
         fontFace: theme.fontFaceBody,
@@ -247,7 +251,7 @@ function renderComparison(slide, data, theme) {
       fill: { color: "F8F9FA" }, line: { color: "E0E0E0", width: 1 },
     });
     const items = (side.points || []).map((p, j, arr) => ({
-      text: p,
+      text: String(p),
       options: {
         bullet: true, fontSize: 13,
         fontFace: theme.fontFaceBody,
@@ -295,7 +299,7 @@ function renderStats(slide, data, theme) {
       line: { color: hex(theme.accentColor) },
     });
     // Big number
-    slide.addText(stat.value || "", {
+    slide.addText(String(stat.value || ""), {
       x, y: 1.5, w: cardW, h: 1.4,
       fontSize: 48, bold: true,
       fontFace: theme.fontFaceTitle,
@@ -655,7 +659,7 @@ function renderImageText(slide, data, theme) {
   });
 
   const items = (data.bullets || []).map((b, i, arr) => ({
-    text: b,
+    text: String(b),
     options: {
       bullet: true, fontSize: 13,
       fontFace: theme.fontFaceBody,

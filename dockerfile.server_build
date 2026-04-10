@@ -21,6 +21,9 @@ ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
 COPY server_build/ .
 
+# get libreoffice-convert dependencies
+RUN apt-get update && apt-get install -y libreoffice && apt-get clean
+
 # Expose the port defined in your index.js
 EXPOSE 3000
 

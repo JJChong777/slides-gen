@@ -1,7 +1,6 @@
 import streamlit as st
-from modules import API_URL_SLIDE, generate_file_name, PPTX_TEMPLATE_FILES, LLM_MODEL_MAX_INPUT_LENGTH
-import time
-from io import BytesIO
+from modules import API_URL_SLIDE, generate_file_name, LLM_MODEL_MAX_INPUT_LENGTH
+import base64
 import requests
     
 def main():
@@ -50,6 +49,13 @@ def main():
         if msg["role"] == "user":
             with st.chat_message("user"):
                 st.markdown(msg["content"])
+                if msg.get("pdf_cache_name"):
+                    pdf_cache_name = msg["pdf_cache_name"]
+                    pdf_bytes = st.session_state.slides_cache.get(pdf_cache_name)
+                    if pdf_bytes:
+                        st.pdf(pdf_bytes, height=400)
+                    else:
+                        st.error("Uploaded PDF data lost. Please re-upload if you want to reference it.")
         elif msg["role"] == "assistant":
             if not msg["ok"]:
                 with st.chat_message("assistant"):
@@ -59,18 +65,36 @@ def main():
                 if msg.get("pptx_name"):
                     pptx_name = msg["pptx_name"]
                     pptx_cache_name = msg["pptx_cache_name"]
-                    pptx_bytes = st.session_state.slides_cache.get(pptx_cache_name)
-                    if pptx_bytes:
+                    pptx_dict = st.session_state.slides_cache.get(pptx_cache_name)
+                    if pptx_dict:
+                        pptx_bytes = pptx_dict["pptx"]
+                        pdf_bytes = pptx_dict["pdf"]
                         with st.chat_message("assistant"):
                             if msg["content"]:
                                 st.markdown(msg["content"])
-                            st.download_button(
-                                label="⬇️ Download Presentation (.pptx)",
-                                data=pptx_bytes,
-                                file_name=f"{pptx_name}.pptx",
-                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                                key=f"dl_{pptx_cache_name}" # Unique key for each button
-                            )
+                            
+                            st.pdf(pdf_bytes, height=400)
+
+                            # Create columns for the download buttons
+                            col1, col2, spacer = st.columns([1.75, 1.75, 6.5])
+                            
+                            with col1:
+                                st.download_button(
+                                    label="⬇️ Download Editable (.pptx)",
+                                    data=pptx_bytes,
+                                    file_name=f"{pptx_name}.pptx",
+                                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                                    key=f"dl_pptx_{pptx_cache_name}" 
+                                )
+                                
+                            with col2:
+                                st.download_button(
+                                    label="⬇️ Download PDF (.pdf)",
+                                    data=pdf_bytes,
+                                    file_name=f"{pptx_name}.pdf",
+                                    mime="application/pdf",
+                                    key=f"dl_pdf_{pptx_cache_name}" 
+                                )
                     else:
                         with st.chat_message("assistant"):
                             st.error(f"Presentation data lost for: {pptx_name}")
@@ -91,11 +115,15 @@ def main():
     if prompt and prompt.text:
         st.session_state.chat_disabled_slides = True
         st.session_state.last_prompt_text_slides = prompt.text
+        cache_name = None
         if prompt["files"]:
             st.session_state.last_prompt_pdf_slides = prompt["files"][0]
+            cache_name = f"user_{generate_file_name()}"
+            st.session_state.slides_cache[cache_name] = prompt["files"][0].getvalue()
         st.session_state.messages_slides.append({
             "role": "user", 
-            "content": f"Prompt: {prompt.text}, PDF: {prompt['files'][0].name if prompt['files'] else 'None'}"
+            "content": prompt.text,
+            "pdf_cache_name": cache_name
         })
         st.rerun()
     
@@ -124,43 +152,54 @@ def main():
                     response = requests.post(url, data=data_payload, files=files_payload, timeout=120)
                     
                     if response.status_code == 200:
-                        # 4. Get the raw bytes of the .pptx file
-                        pptx_bytes = response.content
+                        # Parse the JSON response
+                        response_data = response.json()
+                        
+                        # Decode the base64 strings back into raw bytes
+                        pptx_bytes = base64.b64decode(response_data["pptx"])
+                        pdf_bytes = base64.b64decode(response_data["pdf"])
+                        pptx_name = response_data.get("filename", "presentation")
+                        
                         pptx_cache_name = generate_file_name()
                         
-                        # (Optional) Try to get the real filename from the headers, fallback to cache name
-                        content_disp = response.headers.get("Content-Disposition", "")
-                        if "filename=" in content_disp:
-                            # Extracts the filename from 'attachment; filename="title.pptx"'
-                            pptx_name = content_disp.split('filename="')[1].strip('"')
-                        else:
-                            pptx_name = f"{pptx_cache_name}.pptx"
-
-                        # 5. Store in cache so the download button survives reruns
-                        st.session_state.slides_cache[pptx_cache_name] = pptx_bytes
+                        # Store BOTH files in cache under a dictionary
+                        st.session_state.slides_cache[pptx_cache_name] = {
+                            "pptx": pptx_bytes,
+                            "pdf": pdf_bytes
+                        }
                         
-                        # 6. Save success to chat history
+                        # Save success to chat history
                         st.session_state.messages_slides.append({
                             "role": "assistant", 
-                            "content": "Done! Here is your generated slide deck:", 
+                            "content": "Done! Here is your generated slide deck with pdf preview:", 
                             "ok": True, 
                             "pptx_cache_name": pptx_cache_name,
                             "pptx_name": pptx_name
                         })
                     else:
                         error_msg = f"Server Error {response.status_code}: {response.text}"
+                        st.session_state.chat_disabled_slides = False
+                        st.session_state.last_prompt_text_slides = None
+                        st.session_state.last_prompt_pdf_slides = None
                         st.session_state.messages_slides.append({"role": "assistant", "content": error_msg, "ok": False})
                 except Exception as e:
                     error_msg = f"Request failed: {str(e)}"
+                    st.session_state.chat_disabled_slides = False
+                    st.session_state.last_prompt_text_slides = None
+                    st.session_state.last_prompt_pdf_slides = None
                     st.session_state.messages_slides.append({"role": "assistant", "content": error_msg, "ok": False})
                         
                 except requests.exceptions.RequestException as e:
                     error_msg = f"Failed to connect to the server. Is server_build running? Error: {str(e)}"
+                    st.session_state.chat_disabled_slides = False
+                    st.session_state.last_prompt_text_slides = None
+                    st.session_state.last_prompt_pdf_slides = None
                     st.session_state.messages_slides.append({"role": "assistant", "content": error_msg, "ok": False})
 
                 # 5. Cleanup state and unlock chat
                 st.session_state.chat_disabled_slides = False
                 st.session_state.last_prompt_text_slides = None
+                st.session_state.last_prompt_pdf_slides = None
                 st.rerun()
 
 if __name__ == "__main__":

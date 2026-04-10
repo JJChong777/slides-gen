@@ -2,7 +2,9 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import { buildPptx } from "./builder.js";
-
+import libre from 'libreoffice-convert';
+import { promisify } from 'util';
+const convertAsync = promisify(libre.convert);
 const PYTHON_SERVICE_URL = "http://server_gen_vertex:8002";
 
 const app = express();
@@ -21,7 +23,7 @@ app.post("/build", async (req, res) => {
     const slidesJson = req.body;
     const buffer = await buildPptx(slidesJson);
 
-    const title = (slidesJson.title || "presentation")
+    const title = String(slidesJson.title || "presentation")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .slice(0, 50);
@@ -73,20 +75,21 @@ app.post("/build_full", upload.single("pdf_file"), async (req, res) => {
     const slidesJson = await jsonResponse.json();
 
     // 3. Build the .pptx buffer using your existing builder
-    const buffer = await buildPptx(slidesJson);
+    const pptxBuffer = await buildPptx(slidesJson);
+
+    const pdfBuffer = await convertAsync(pptxBuffer, '.pdf', undefined);
 
     // 4. Prepare filename and send
-    const title = (slidesJson.title || "presentation")
+    const title = String(slidesJson.title || "presentation")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .slice(0, 50);
 
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    );
-    res.setHeader("Content-Disposition", `attachment; filename="${title}.pptx"`);
-    res.send(buffer);
+    res.json({
+      pptx: pptxBuffer.toString('base64'),
+      pdf: pdfBuffer.toString('base64'),
+      filename: title
+    });
 
   } catch (err) {
     console.error("Orchestration Error:", err);

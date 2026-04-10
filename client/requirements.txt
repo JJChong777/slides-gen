@@ -1,4 +1,5 @@
 # client_streamlit dependencies
 streamlit
+streamlit[pdf]
 requests
 pytz
