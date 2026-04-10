@@ -37,12 +37,12 @@ def main():
             submitted = st.form_submit_button('Submit Question')
             if submitted and selected_question:
                 # Set the prompt text state directly when a suggestion is clicked
-                st.session_state.last_prompt_text_slides = selected_question
-                st.session_state.chat_disabled_slides = True
-                st.session_state.messages_slides.append({
-                    "role": "user", 
-                    "content": f"Prompt: {selected_question}"
-                })
+                st.session_state.chat_input_slides = selected_question
+                # st.session_state.chat_disabled_slides = True
+                # st.session_state.messages_slides.append({
+                #     "role": "user", 
+                #     "content": f"Prompt: {selected_question}"
+                # })
                 st.rerun()
     
     # Render chat history
@@ -58,7 +58,8 @@ def main():
                 # If there's a pptx file associated with this message, render the download button
                 if msg.get("pptx_name"):
                     pptx_name = msg["pptx_name"]
-                    pptx_bytes = st.session_state.slides_cache.get(pptx_name)
+                    pptx_cache_name = msg["pptx_cache_name"]
+                    pptx_bytes = st.session_state.slides_cache.get(pptx_cache_name)
                     if pptx_bytes:
                         with st.chat_message("assistant"):
                             if msg["content"]:
@@ -68,7 +69,7 @@ def main():
                                 data=pptx_bytes,
                                 file_name=f"{pptx_name}.pptx",
                                 mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                                key=f"dl_{pptx_name}" # Unique key for each button
+                                key=f"dl_{pptx_cache_name}" # Unique key for each button
                             )
                     else:
                         with st.chat_message("assistant"):
@@ -89,12 +90,12 @@ def main():
 
     if prompt and prompt.text:
         st.session_state.chat_disabled_slides = True
-        st.session_state.last_prompt_text_slides = prompt
+        st.session_state.last_prompt_text_slides = prompt.text
         if prompt["files"]:
             st.session_state.last_prompt_pdf_slides = prompt["files"][0]
         st.session_state.messages_slides.append({
             "role": "user", 
-            "content": f"Prompt: {prompt}"
+            "content": f"Prompt: {prompt.text}, PDF: {prompt['files'][0].name if prompt['files'] else 'None'}"
         })
         st.rerun()
     

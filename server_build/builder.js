@@ -76,6 +76,7 @@ function slideTitle(slide, text, theme, opts = {}) {
     fontFace: theme.fontFaceTitle,
     color: opts.color ?? hex(theme.textColor),
     margin: 0,
+    fit:'shrink',
     ...opts.extra,
   });
 }
@@ -109,6 +110,7 @@ function renderTitle(slide, data, theme) {
     color: "FFFFFF",
     align: "left",
     valign: "middle",
+    fit:'shrink',
   });
 
   if (data.subheading) {
@@ -118,6 +120,7 @@ function renderTitle(slide, data, theme) {
       fontFace: theme.fontFaceBody,
       color: hex(theme.secondaryColor),
       align: "left",
+      fit:'shrink',
     });
   }
 }
@@ -161,6 +164,7 @@ function renderBullets(slide, data, theme) {
     x: data.accent === "left" ? 0.35 : 0.5,
     y: 1.2, w: W - 1.2, h: H - 1.5,
     valign: "top",
+    fit:'shrink',
   });
 }
 
@@ -192,6 +196,7 @@ function renderTwoColumn(slide, data, theme) {
       fontSize: 14, bold: true,
       fontFace: theme.fontFaceTitle,
       color: "FFFFFF", align: "center", valign: "middle", margin: 0,
+      fit:'shrink',
     });
 
     const items = (col.bullets || []).map((b, j, arr) => ({
@@ -206,6 +211,7 @@ function renderTwoColumn(slide, data, theme) {
     slide.addText(items, {
       x: xs[i] + 0.05, y: 1.75, w: colW - 0.1, h: H - 2.0,
       valign: "top",
+      fit:'shrink',
     });
   });
 }
@@ -233,6 +239,7 @@ function renderComparison(slide, data, theme) {
       fontSize: 18, bold: true,
       fontFace: theme.fontFaceTitle,
       color: "FFFFFF", align: "center", valign: "middle", margin: 0,
+      fit:'shrink',
     });
     // Card bg
     slide.addShape("rect", {
@@ -251,6 +258,7 @@ function renderComparison(slide, data, theme) {
     slide.addText(items, {
       x: xs[i] + 0.15, y: 1.8, w: colW - 0.3, h: H - 2.2,
       valign: "top",
+      fit:'shrink',
     });
   });
 }
@@ -293,6 +301,7 @@ function renderStats(slide, data, theme) {
       fontFace: theme.fontFaceTitle,
       color: hex(theme.primaryColor),
       align: "center", valign: "middle", margin: 0,
+      fit:'shrink',
     });
     // Label
     slide.addText(stat.label || "", {
@@ -301,6 +310,7 @@ function renderStats(slide, data, theme) {
       fontFace: theme.fontFaceBody,
       color: hex(theme.textColor),
       align: "center", margin: 0,
+      fit:'shrink',
     });
     // Sublabel
     if (stat.sublabel) {
@@ -310,6 +320,7 @@ function renderStats(slide, data, theme) {
         fontFace: theme.fontFaceBody,
         color: "888888",
         align: "center", margin: 0,
+        fit:'shrink',
       });
     }
   });
@@ -350,6 +361,8 @@ function renderTimeline(slide, data, theme) {
       x: cx - 0.28, y: lineY - 0.28, w: 0.56, h: 0.56,
       fontSize: 14, bold: true,
       color: "FFFFFF", align: "center", valign: "middle", margin: 0,
+      fit:'shrink',
+
     });
     // Title above line
     slide.addText(step.title || "", {
@@ -358,6 +371,7 @@ function renderTimeline(slide, data, theme) {
       fontFace: theme.fontFaceTitle,
       color: hex(theme.textColor),
       align: "center", valign: "bottom", margin: 0,
+      fit:'shrink',
     });
     // Description below line
     if (step.description) {
@@ -367,6 +381,7 @@ function renderTimeline(slide, data, theme) {
         fontFace: theme.fontFaceBody,
         color: "555555",
         align: "center", valign: "top",
+        fit:'shrink',
       });
     }
   });
@@ -397,6 +412,7 @@ function renderProcess(slide, data, theme) {
       x: 0.4, y: y + rowH / 2 - 0.28, w: 0.56, h: 0.56,
       fontSize: 14, bold: true, color: "FFFFFF",
       align: "center", valign: "middle", margin: 0,
+      fit:'shrink',
     });
 
     // Step bar
@@ -412,6 +428,7 @@ function renderProcess(slide, data, theme) {
       fontSize: 14, bold: true,
       fontFace: theme.fontFaceTitle,
       color: textColor, valign: "middle", margin: 0,
+      fit:'shrink',
     });
 
     if (step.description) {
@@ -420,6 +437,7 @@ function renderProcess(slide, data, theme) {
         fontSize: 12,
         fontFace: theme.fontFaceBody,
         color: textColor, valign: "middle",
+        fit:'shrink',
       });
     }
 
@@ -447,6 +465,7 @@ function renderQuote(slide, data, theme) {
     fontFace: theme.fontFaceTitle,
     transparency: 40,
     margin: 0,
+    fit:'shrink',
   });
 
   slide.addText(data.quote || "", {
@@ -455,6 +474,7 @@ function renderQuote(slide, data, theme) {
     fontFace: theme.fontFaceTitle,
     color: "FFFFFF",
     align: "center", valign: "middle",
+    fit:'shrink',
   });
 
   if (data.attribution) {
@@ -469,6 +489,7 @@ function renderQuote(slide, data, theme) {
       fontFace: theme.fontFaceBody,
       color: hex(theme.secondaryColor),
       align: "center",
+      fit:'shrink',
     });
   }
 }
@@ -489,6 +510,7 @@ function renderAgenda(slide, data, theme) {
     fontFace: theme.fontFaceTitle,
     color: "FFFFFF",
     align: "center", valign: "middle",
+    fit:'shrink',
   });
 
   // Items
@@ -505,6 +527,7 @@ function renderAgenda(slide, data, theme) {
       x: 3.5, y: y + itemH / 2 - 0.24, w: 0.48, h: 0.48,
       fontSize: 13, bold: true, color: "FFFFFF",
       align: "center", valign: "middle", margin: 0,
+      fit:'shrink',
     });
     slide.addText(item, {
       x: 4.15, y, w: W - 4.55, h: itemH,
@@ -512,6 +535,7 @@ function renderAgenda(slide, data, theme) {
       fontFace: theme.fontFaceBody,
       color: hex(theme.textColor),
       valign: "middle",
+      fit:'shrink',
     });
     // Thin separator
     if (i < items.length - 1) {
@@ -622,6 +646,7 @@ function renderImageText(slide, data, theme) {
     fontSize: 13, italic: true,
     color: hex(theme.primaryColor),
     align: "center", valign: "middle",
+    fit:'shrink',
   });
 
   // Text panel
@@ -641,6 +666,7 @@ function renderImageText(slide, data, theme) {
   slide.addText(items, {
     x: textX, y: 1.2, w: W / 2 - 0.6, h: H - 1.6,
     valign: "top",
+    fit:'shrink',
   });
 }
 
@@ -662,6 +688,7 @@ function renderSectionBreak(slide, data, theme) {
       fontFace: theme.fontFaceBody,
       color: hex(theme.secondaryColor),
       align: "center",
+      fit:'shrink',
     });
   }
 
@@ -671,6 +698,7 @@ function renderSectionBreak(slide, data, theme) {
     fontFace: theme.fontFaceTitle,
     color: "FFFFFF",
     align: "center", valign: "middle",
+    fit:'shrink',
   });
 
   if (data.subheading) {
@@ -680,6 +708,7 @@ function renderSectionBreak(slide, data, theme) {
       fontFace: theme.fontFaceBody,
       color: hex(theme.secondaryColor),
       align: "center",
+      fit:'shrink',
     });
   }
 }
@@ -706,6 +735,7 @@ function renderClosing(slide, data, theme) {
     fontFace: theme.fontFaceTitle,
     color: "FFFFFF",
     align: "center", valign: "middle",
+    fit:'shrink',
   });
 
   if (data.subheading) {
@@ -715,6 +745,7 @@ function renderClosing(slide, data, theme) {
       fontFace: theme.fontFaceBody,
       color: hex(theme.secondaryColor),
       align: "center",
+      fit:'shrink',
     });
   }
 
@@ -731,6 +762,7 @@ function renderClosing(slide, data, theme) {
       fontFace: theme.fontFaceBody,
       color: "FFFFFF",
       align: "center", valign: "middle", margin: 0,
+      fit:'shrink',
     });
   }
 }

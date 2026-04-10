@@ -9,6 +9,7 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // ── Health ──────────────────────────────────────────────────────────────────
 app.get("/", (_req, res) => res.json({ status: "ok", message: "server_build is running" }));

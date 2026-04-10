@@ -4,6 +4,7 @@ test.json
 node_modules/
 *.pptx
 *.pdf
+.DS_Store
 
 # ignore all tar and tar.gz files
 *.tar
