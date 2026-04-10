@@ -83,7 +83,7 @@ def get_slides_json():
             # Remember to keep return_objects=True to prevent the double-serialization bug!
             json_output = repair_json(raw_json_output, return_objects=True)
         
-        app.state.contents = None  
+        # app.state.contents = None  
         return JSONResponse(content=json_output)
         
     except Exception as e:

@@ -37,6 +37,3 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - ./client:/app
-    depends_on:
-      - server_build
-      - server_gen_vertex

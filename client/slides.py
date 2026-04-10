@@ -16,6 +16,8 @@ def main():
         st.session_state.chat_disabled_slides = False
     if "last_prompt_text_slides" not in st.session_state:
         st.session_state.last_prompt_text_slides = None
+    if "last_prompt_pdf_slides" not in st.session_state:
+        st.session_state.last_prompt_pdf_slides = None
 
     suggested_questions = [
         "Introduction to Machine Learning",
@@ -79,12 +81,17 @@ def main():
     prompt = st.chat_input(placeholder="Write the topic or instructions here.",
         disabled=st.session_state.chat_disabled_slides,
         key='chat_input_slides',
-        max_chars=LLM_MODEL_MAX_INPUT_LENGTH
+        max_chars=LLM_MODEL_MAX_INPUT_LENGTH,
+        accept_file = True,
+        file_type=["pdf"],
+        max_upload_size=25
     )
 
-    if prompt:
+    if prompt and prompt.text:
         st.session_state.chat_disabled_slides = True
         st.session_state.last_prompt_text_slides = prompt
+        if prompt["files"]:
+            st.session_state.last_prompt_pdf_slides = prompt["files"][0]
         st.session_state.messages_slides.append({
             "role": "user", 
             "content": f"Prompt: {prompt}"
@@ -98,31 +105,53 @@ def main():
         with st.chat_message("assistant"):
             with st.spinner("Generating your slide deck with Vertex AI... This may take 15-30 seconds."):
                 try:
-                    # 1. Call the new /build-full endpoint
-                    url = f"{API_URL_SLIDE}/build-full"
-                    payload = {"prompt": prompt_text}
+                    # 1. Call the new /build_full endpoint (fixed underscore)
+                    url = f"{API_URL_SLIDE}/build_full"
                     
-                    # We add a 120 second timeout because Vertex AI can take a while to generate
-                    response = requests.post(url, json=payload, timeout=120)
+                    # 2. Separate text data from file data
+                    data_payload = {"prompt": prompt_text}
+                    files_payload = None
+                    
+                    if st.session_state.last_prompt_pdf_slides:
+                        pdf_file = st.session_state.last_prompt_pdf_slides
+                        # The key "pdf_file" matches the multer upload.single("pdf_file") in Node
+                        files_payload = {
+                            "pdf_file": (pdf_file.name, pdf_file.getvalue(), 'application/pdf')
+                        }
+                    
+                    # 3. Use data= and files= (NEVER json= when uploading files)
+                    response = requests.post(url, data=data_payload, files=files_payload, timeout=120)
                     
                     if response.status_code == 200:
-                        # 2. Get the raw bytes of the .pptx file
+                        # 4. Get the raw bytes of the .pptx file
                         pptx_bytes = response.content
-                        pptx_name = generate_file_name()
+                        pptx_cache_name = generate_file_name()
                         
-                        # 3. Store in cache so the download button survives reruns
-                        st.session_state.slides_cache[pptx_name] = pptx_bytes
+                        # (Optional) Try to get the real filename from the headers, fallback to cache name
+                        content_disp = response.headers.get("Content-Disposition", "")
+                        if "filename=" in content_disp:
+                            # Extracts the filename from 'attachment; filename="title.pptx"'
+                            pptx_name = content_disp.split('filename="')[1].strip('"')
+                        else:
+                            pptx_name = f"{pptx_cache_name}.pptx"
+
+                        # 5. Store in cache so the download button survives reruns
+                        st.session_state.slides_cache[pptx_cache_name] = pptx_bytes
                         
-                        # 4. Save success to chat history
+                        # 6. Save success to chat history
                         st.session_state.messages_slides.append({
                             "role": "assistant", 
                             "content": "Done! Here is your generated slide deck:", 
                             "ok": True, 
+                            "pptx_cache_name": pptx_cache_name,
                             "pptx_name": pptx_name
                         })
                     else:
                         error_msg = f"Server Error {response.status_code}: {response.text}"
                         st.session_state.messages_slides.append({"role": "assistant", "content": error_msg, "ok": False})
+                except Exception as e:
+                    error_msg = f"Request failed: {str(e)}"
+                    st.session_state.messages_slides.append({"role": "assistant", "content": error_msg, "ok": False})
                         
                 except requests.exceptions.RequestException as e:
                     error_msg = f"Failed to connect to the server. Is server_build running? Error: {str(e)}"
