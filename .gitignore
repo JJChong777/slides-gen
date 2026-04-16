@@ -7,9 +7,6 @@ node_modules/
 *.tar
 *.tar.gz
 
-# ignore all the test pngs I make
-*.png
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
