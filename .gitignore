@@ -1,9 +1,6 @@
 # GCP Credentials
 gcp-credentials.json
-test.json
 node_modules/
-*.pptx
-*.pdf
 .DS_Store
 
 # ignore all tar and tar.gz files
