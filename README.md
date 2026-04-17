@@ -10,7 +10,7 @@ After that, you can use the command to build everything
 docker compose up --build
 ```
 
-The features are allwoing users to upload a text or PDF prompt to allow AI to generate slides.
+The features are allwoing users to upload a text or PDF prompt to allow AI to generate slides. demo on youtube [here](https://www.youtube.com/watch?v=Ew0wn8b7hmk)
 
 ## Development stuff
 
